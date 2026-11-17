@@ -1,4 +1,4 @@
-name: CI — verify and publish image
+name: CI - verify and publish image
 
 on:
   push:
@@ -64,9 +64,11 @@ jobs:
   image:
     needs: test
     runs-on: ubuntu-latest
+
     # ИНЦИДЕНТ 1: для push в GHCR права пока недостаточно.
     permissions:
       contents: read
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -82,7 +84,7 @@ jobs:
           set -euo pipefail
           cleanup() {
             docker logs smoke || true
-            docker rm -f smoke > /dev/null 2>&1 || true
+            docker rm -f smoke >/dev/null 2>&1 || true
           }
           trap cleanup EXIT
           docker run -d --name smoke -p 127.0.0.1:5000:5000 "devops-ci-app:${GITHUB_SHA}"
@@ -96,11 +98,11 @@ jobs:
             sleep 1
           done
           if [ "$ready" -ne 1 ]; then
-            echo "::error::/health did not respond after 15 attempts"
+            echo "::error::health did not respond after 15 attempts"
             exit 1
           fi
           python3 -m json.tool health.json
-          python3 << 'PY'
+          python3 - <<'PY'
           import json
           from pathlib import Path
           payload = json.loads(Path("health.json").read_text(encoding="utf-8"))
@@ -114,7 +116,7 @@ jobs:
           docker tag "devops-ci-app:${GITHUB_SHA}" "${IMAGE_NAME}:${GITHUB_SHA}"
           docker tag "devops-ci-app:${GITHUB_SHA}" "${IMAGE_NAME}:latest"
 
-      - name: Login to GHCR
+      - name: Log in to GHCR
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
